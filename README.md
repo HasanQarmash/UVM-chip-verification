@@ -1,186 +1,176 @@
-# Interrupt Controller Project
+# 🛡️ UVM Testbench for an 8-bit Priority Interrupt Controller
 
-This project implements a priority-based interrupt controller using SystemVerilog and UVM for verification.
+![Language](https://img.shields.io/badge/Language-SystemVerilog-blue.svg)
+![Methodology](https://img.shields.io/badge/Methodology-UVM%201.2-green.svg)
+![Simulator](https://img.shields.io/badge/Simulator-QuestaSim%20%7C%20VCS%20%7C%20Xcelium-orange.svg)
+![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)
 
-## Project Overview
+A comprehensive UVM (Universal Verification Methodology) verification environment designed to rigorously test an 8-bit priority-based interrupt controller. This project showcases a complete, industry-standard verification workflow from test planning to functional validation.
 
-The interrupt controller receives eight external interrupt requests (IRQ0-IRQ7) from different peripherals and generates an interrupt request (IRQ) to the processor. The controller implements priority-based interrupt handling where IRQ0 has the highest priority and IRQ7 has the lowest priority.
+---
 
-## Features
+## 🚀 Project Overview
 
-- **8 External Interrupt Inputs**: IRQ0 to IRQ7 with configurable priority
-- **Priority Encoding**: IRQ0 (highest) to IRQ7 (lowest) priority
-- **Mask Register**: Software-configurable interrupt masking
-- **Pending Register**: Tracks pending interrupt requests
-- **Processor Interface**: IRQ output and acknowledgment handling
+This repository contains the RTL design for a priority interrupt controller and a complete UVM testbench built to verify its functionality. The controller manages eight interrupt requests (IRQ0-IRQ7), prioritizing them and interfacing with a processor. The verification environment is built to be robust, reusable, and scalable.
 
-## File Structure
+## ✨ Key Features
 
-### RTL Design Files
+### RTL (Design Under Test)
+- **8-bit Interrupt Handling**: Manages up to 8 interrupt sources.
+- **Fixed Priority Scheme**: IRQ0 has the highest priority, and IRQ7 has the lowest.
+- **Interrupt Masking**: Features a configurable mask register to enable/disable specific interrupts.
+- **Pending Register**: Latches incoming interrupt requests until they are acknowledged.
+- **Processor Handshake**: Simple `irq_out` and `ack` interface for processor communication.
 
-- `ic_interrupt_controller.sv` - Main interrupt controller module
-- `ic_processor.sv` - Simple processor model for testing
-- `design.sv` - Top-level design integration
-- `ic_interface.sv` - SystemVerilog interface definition
-- `ic_ref_model.sv` - Golden reference model
+### UVM Testbench
+- **Layered & Reusable Architecture**: Follows UVM best practices for modularity and scalability.
+- **Comprehensive Test Suite**: Includes directed, constrained-random, and regression tests.
+- **Advanced Monitoring**: Utilizes edge-based detection for precise event capture.
+- **Reference Model & Scoreboard**: Provides accurate, cycle-by-cycle DUT behavior validation.
 
-### Verification Files
+---
 
-- `testbench.sv` - Top-level testbench
-- `ic_env.sv` - UVM environment
-- `ic_agent.sv` - UVM agent
-- `ic_driver.sv` - UVM driver
-- `ic_monitor.sv` - UVM monitor
-- `ic_scoreboard.sv` - UVM scoreboard
-- `ic_coverage.sv` - Functional coverage
-- `ic_sequence.sv` - Test sequences
-- `ic_seq_item.sv` - Sequence item definition
-- `ic_config.sv` - Configuration class
-- `ic_interrupt_test.sv` - Test classes
+## 🏗️ Verification Architecture
 
-### Build Files
+The testbench follows a standard UVM layered architecture to ensure separation of concerns and reusability.
 
-- `Makefile` - Build and simulation targets
-- `README.md` - This file
+```mermaid
+graph TD
+    subgraph Test Layer
+        A[ic_comprehensive_test] --> B{run_phase};
+    end
 
-## Getting Started
+    subgraph Environment Layer
+        C[ic_env] --> D[ic_agent];
+        C --> E[ic_scoreboard];
+    end
+
+    subgraph Agent Layer
+        D --> F[ic_sequencer];
+        D --> G[ic_driver];
+        D --> H[ic_monitor];
+    end
+    
+    subgraph Sequence Layer
+        I[ic_priority_sequence] --> F;
+        J[ic_mask_sequence] --> F;
+        K[ic_single_irq_sequence] --> F;
+    end
+
+    B --> I;
+    B --> J;
+    B --> K;
+    
+    F --> G;
+    G -- SystemVerilog Interface --> L[DUT: interrupt_controller];
+    H -- SystemVerilog Interface --> L;
+    H -- ic_transaction --> E;
+    
+    style DUT fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+---
+
+## 📂 File Structure
+
+The project is organized into design, verification, and build files.
+
+```
+.
+├── 📜 uvm_design.sv              # RTL: Complete design implementation
+├── 🔬 uvm_testbench.sv           # UVM: Complete verification environment
+├── 📝 UVM_Project_Report.tex     # Documentation: Detailed project report
+├── 🛠️ Makefile                   # Build: Automation for compilation and simulation
+├── 🚀 run_*.sh / .bat           # Scripts: Test execution helpers
+└── 📖 README.md                  # This file
+```
+
+---
+
+## ⚙️ Getting Started
 
 ### Prerequisites
 
-- QuestaSim/ModelSim simulator
-- UVM library (typically included with simulator)
-- SystemVerilog support
+- A SystemVerilog-2012 compliant simulator (e.g., Mentor QuestaSim, Synopsys VCS, Cadence Xcelium).
+- UVM 1.2 library (usually bundled with modern simulators).
+- `make` for running automated builds.
 
-### Compilation and Simulation
+### 🚀 Quick Start: Compilation & Simulation
 
-1. **Compile the design:**
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/HasanQarmash/UVM-chip-verification.git
+    cd UVM-chip-verification
+    ```
 
-   ```bash
-   make compile
-   ```
+2.  **Compile the environment:**
+    This command compiles both the DUT and the testbench.
+    ```bash
+    make compile
+    ```
 
-2. **Run basic test:**
+3.  **Run the comprehensive regression test:**
+    This runs a full suite of tests to validate the core functionality.
+    ```bash
+    make run_uvm_test
+    ```
+    You should see a `*** ALL TESTS PASSED ***` message from the scoreboard at the end of the simulation log.
 
-   ```bash
-   make run
-   ```
+### 🧪 Running Specific Tests
 
-3. **Run specific tests:**
+The Makefile provides targets for running individual test scenarios:
 
-   ```bash
-   make run_priority     # Priority encoding test
-   make run_masking      # Interrupt masking test
-   make run_comprehensive # All tests combined
-   ```
+-   `make run_single_irq`: Verifies each interrupt line individually.
+-   `make run_priority`: Tests the priority logic with competing interrupts.
+-   `make run_mask`: Checks the functionality of the interrupt mask register.
 
-4. **Run all tests:**
+### 🖥️ Waveform Debugging
 
-   ```bash
-   make run_all
-   ```
+To open the simulator in GUI mode and view waveforms:
+```bash
+make gui
+```
+This will generate a `uvm_waves.vcd` file that can be loaded into a waveform viewer.
 
-5. **GUI simulation:**
-   ```bash
-   make gui
-   ```
+---
 
-### Test Scenarios
+## 🎯 Verification Strategy & Results
 
-1. **Basic Interrupt Test** (`ic_interrupt_test`)
+The verification strategy aims for 100% functional coverage of the DUT's features.
 
-   - Random interrupt generation
-   - Basic functionality verification
+-   **Verification Goals**:
+    -   [✔️] Verify interrupt prioritization.
+    -   [✔️] Verify interrupt masking.
+    -   [✔️] Verify pending register latching and clearing.
+    -   [✔️] Verify reset behavior.
+    -   [✔️] Test boundary conditions (e.g., all interrupts asserted simultaneously).
 
-2. **Priority Test** (`ic_priority_test`)
+-   **Results Summary**:
+    -   All defined test cases pass.
+    -   The scoreboard reports zero mismatches.
 
-   - Individual interrupt testing
-   - Priority encoding verification
-   - Multiple simultaneous interrupts
+---
 
-3. **Masking Test** (`ic_masking_test`)
+## 🤝 Contributing
 
-   - Mask register functionality
-   - Selective interrupt enabling/disabling
+Contributions are welcome! If you have suggestions for improvements or find any issues, please feel free to open an issue or submit a pull request.
 
-4. **Comprehensive Test** (`ic_comprehensive_test`)
-   - Combination of all test scenarios
-   - Extended verification coverage
+1.  Fork the Project.
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the Branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
 
-## Design Specifications
+---
 
-### Input Ports
+## 📜 License
 
-- `clk` - Clock signal
-- `rstn` - Active low reset
-- `irq_in[7:0]` - External interrupt requests
-- `ack` - Acknowledgment from processor
-- `mask_reg[7:0]` - Interrupt mask register
+This project is distributed under the MIT License. See the `LICENSE` file for more information.
 
-### Output Ports
+---
 
-- `irq_out` - Global interrupt output
-- `irq_id[2:0]` - Highest priority interrupt ID
+## 📧 Contact
 
-### Internal Registers
+Hasan Qarmash - [LinkedIn](https://www.linkedin.com/in/hasan-qarmash-b27343247/)
 
-- **Pending Register**: 8-bit register tracking pending interrupts
-- **Mask Register**: 8-bit register for enabling/disabling interrupts
-
-### Priority Scheme
-
-- IRQ0: Highest priority (000)
-- IRQ1: Priority level 1 (001)
-- IRQ2: Priority level 2 (010)
-- ...
-- IRQ7: Lowest priority (111)
-
-## Verification Strategy
-
-### Coverage Goals
-
-- All interrupt lines tested individually
-- All priority combinations covered
-- All masking scenarios verified
-- Acknowledgment and clearing mechanisms tested
-
-### Assertion-Based Verification
-
-- Priority encoding correctness
-- Pending register management
-- Mask register compliance
-- Output signal validity
-
-## EDA Tool Support
-
-This project is designed to be compatible with major EDA tools:
-
-- **Synopsys VCS**
-- **Cadence Xcelium**
-- **Mentor QuestaSim/ModelSim**
-- **Aldec Riviera-PRO**
-
-For tool-specific compilation, modify the Makefile accordingly.
-
-## Usage in EDA Environment
-
-1. Upload all `.sv` files to your EDA tool workspace
-2. Set the top-level module as `testbench`
-3. Configure UVM library paths if required
-4. Run compilation and simulation
-
-## Project Deliverables
-
-1. ✅ RTL Design SystemVerilog Source Code
-2. ✅ UVM TestBench Source Code
-3. ✅ Golden Reference Model
-
-## Future Enhancements
-
-- Add edge/level triggered interrupt support
-- Implement interrupt vector table
-- Add nested interrupt capability
-- Support for interrupt priorities beyond 8 levels
-
-## Contact
-
-For questions or issues, please refer to the project documentation or contact the development team.
+Project Link: [https://github.com/HasanQarmash/UVM-chip-verification](https://github.com/HasanQarmash/UVM-chip-verification)
