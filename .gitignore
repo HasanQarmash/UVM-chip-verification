@@ -1,0 +1,19 @@
+# Ignore generated files
+*.vcd
+*.log
+testbench
+results/
+
+# Ignore LaTeX auxiliary files
+*.aux
+*.lof
+*.lot
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Ignore build artifacts
+build/
+.vscode/

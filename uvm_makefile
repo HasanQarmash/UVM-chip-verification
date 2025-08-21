@@ -1,0 +1,124 @@
+# UVM Makefile for Interrupt Controller
+# Supports multiple EDA tools (VCS, Questa, Xcelium)
+
+# Default simulator
+SIM ?= questa
+
+# File names
+DESIGN_FILE = uvm_design.sv
+TB_FILE = uvm_testbench.sv
+
+# Test names
+TEST ?= ic_comprehensive_test
+
+# UVM Library path (adjust based on your installation)
+UVM_HOME ?= $(QUESTA_HOME)/verilog_src/uvm-1.2
+
+# Common compilation flags
+VLOG_FLAGS = +incdir+$(UVM_HOME)/src $(UVM_HOME)/src/uvm_pkg.sv
+VSIM_FLAGS = +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=UVM_MEDIUM
+
+# VCS specific settings
+VCS_FLAGS = -sverilog -ntb_opts uvm-1.2 +incdir+$(UVM_HOME)/src
+VCS_SIM_FLAGS = +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=UVM_MEDIUM
+
+# Questa specific settings
+QUESTA_FLAGS = -sv +incdir+$(UVM_HOME)/src $(UVM_HOME)/src/uvm_pkg.sv
+QUESTA_SIM_FLAGS = +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=UVM_MEDIUM
+
+# Xcelium specific settings
+XCELIUM_FLAGS = -sv -uvm +incdir+$(UVM_HOME)/src
+XCELIUM_SIM_FLAGS = +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=UVM_MEDIUM
+
+# Default target
+all: compile simulate
+
+# Compilation targets
+compile:
+ifeq ($(SIM),vcs)
+	vcs $(VCS_FLAGS) $(DESIGN_FILE) $(TB_FILE) -o simv
+else ifeq ($(SIM),xcelium)
+	xrun $(XCELIUM_FLAGS) $(DESIGN_FILE) $(TB_FILE) -elaborate
+else
+	# Default to Questa
+	vlog $(QUESTA_FLAGS) $(DESIGN_FILE) $(TB_FILE)
+endif
+
+# Simulation targets
+simulate:
+ifeq ($(SIM),vcs)
+	./simv $(VCS_SIM_FLAGS) +vcs+finish+100ms
+else ifeq ($(SIM),xcelium)
+	xrun $(XCELIUM_FLAGS) $(XCELIUM_SIM_FLAGS) $(DESIGN_FILE) $(TB_FILE) -access +rwc
+else
+	# Default to Questa
+	vsim -c work.uvm_testbench $(QUESTA_SIM_FLAGS) -do "run -all; quit"
+endif
+
+# Run specific tests
+test_single:
+	$(MAKE) simulate TEST=ic_single_irq_test
+
+test_priority:
+	$(MAKE) simulate TEST=ic_priority_test
+
+test_mask:
+	$(MAKE) simulate TEST=ic_mask_test
+
+test_comprehensive:
+	$(MAKE) simulate TEST=ic_comprehensive_test
+
+# Run all tests
+test_all:
+	$(MAKE) test_single
+	$(MAKE) test_priority
+	$(MAKE) test_mask
+	$(MAKE) test_comprehensive
+
+# GUI simulation (Questa)
+gui:
+	vsim -gui work.uvm_testbench $(QUESTA_SIM_FLAGS)
+
+# Clean targets
+clean:
+	rm -rf work/ simv* csrc/ *.log *.vcd *.wlf transcript *.vstf
+	rm -rf xcelium.d/ *.shm/ *.trn *.dsn
+
+# Help target
+help:
+	@echo "UVM Interrupt Controller Testbench Makefile"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make [SIM=simulator] [TEST=test_name] [target]"
+	@echo ""
+	@echo "Simulators:"
+	@echo "  questa  - Mentor Questa (default)"
+	@echo "  vcs     - Synopsys VCS"
+	@echo "  xcelium - Cadence Xcelium"
+	@echo ""
+	@echo "Tests:"
+	@echo "  ic_single_irq_test     - Test individual interrupts"
+	@echo "  ic_priority_test       - Test interrupt priorities"
+	@echo "  ic_mask_test           - Test interrupt masking"
+	@echo "  ic_comprehensive_test  - Run all tests (default)"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all              - Compile and simulate"
+	@echo "  compile          - Compile only"
+	@echo "  simulate         - Simulate only"
+	@echo "  test_single      - Run single interrupt test"
+	@echo "  test_priority    - Run priority test"
+	@echo "  test_mask        - Run mask test"
+	@echo "  test_comprehensive - Run comprehensive test"
+	@echo "  test_all         - Run all individual tests"
+	@echo "  gui              - Run with GUI (Questa only)"
+	@echo "  clean            - Clean all generated files"
+	@echo "  help             - Show this help"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make                                    # Run comprehensive test with Questa"
+	@echo "  make SIM=vcs TEST=ic_single_irq_test   # Run single IRQ test with VCS"
+	@echo "  make gui                               # Open Questa GUI"
+	@echo "  make test_all                          # Run all tests"
+
+.PHONY: all compile simulate test_single test_priority test_mask test_comprehensive test_all gui clean help
